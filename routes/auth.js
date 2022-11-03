@@ -1,7 +1,7 @@
 const passport = require("passport");
 const router = require('express').Router()
 const jwt = require("jsonwebtoken")
-const {singInByUnionId} = require("../controllers/auth");
+const {singInByUnionId, signup} = require("../controllers/auth");
 
 const CLIENT_URI = "http://localhost:3000"
 
@@ -11,6 +11,7 @@ router.get("/login", (req, res, next) => {
         if (req.user.id) {
             const token = jwt.sign({id: req.user.id}, process.env.SECRET_JWT, {expiresIn: '30d'})
             return res
+                .cookie("access_token", token, {httpOnly: true})
                 .status(200)
                 .json({
                     resultCode: 0,
@@ -31,12 +32,16 @@ router.get('/logout', (req, res, next) => {
         if (err) {
             return next(err);
         }
+        res.clearCookie("access_token");
         return res.redirect(CLIENT_URI);
     });
 });
 
 // Вход в аккаунт через UnionID
 router.post("/union/signin", singInByUnionId)
+
+// Вход в акканут или регистрация, если почта свободна
+router.post('/signup', signup)
 
 
 
