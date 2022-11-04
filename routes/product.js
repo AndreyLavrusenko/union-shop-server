@@ -1,5 +1,13 @@
 const router = require('express').Router()
-const {getTopProduct, getPopularProductFirst, getPopularProductSecond, getPopularProductThird, getAdvertising} = require("../controllers/product");
+const {
+    getTopProduct,
+    getPopularProductFirst,
+    getPopularProductSecond,
+    getPopularProductThird,
+    getAdvertising,
+    getCategory,
+    getAllProducts
+} = require("../controllers/product");
 
 // Получение главных (популярных) товаров
 router.get('/top', getTopProduct)
@@ -8,6 +16,8 @@ router.get('/popular/1', getPopularProductFirst)
 router.get('/popular/2', getPopularProductSecond)
 router.get('/popular/3', getPopularProductThird)
 router.get('/advertising', getAdvertising)
+router.get('/category', getCategory)
+router.get('/shop', getAllProducts)
 
 
 module.exports = router;

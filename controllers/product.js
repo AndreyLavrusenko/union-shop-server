@@ -91,6 +91,67 @@ const getAdvertising = async = (req, res, next) => {
     }
 }
 
+// Получение точной категории товара
+const getCategory = async (req, res, next) => {
+    try {
+        const sql = `SELECT category_type FROM product GROUP BY category_type`;
+
+        pool.query(sql, (error, result) => {
+            if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+
+            return res.status(200).json(result)
+
+        })
+    } catch (err) {
+        next(createError(404, "Category not found"))
+    }
+}
+
+const getAllProducts = async (req, res, next) => {
+    try {
+
+        const sql = `SELECT COUNT(*) FROM product`;
+
+        pool.query(sql, (error, result) => {
+            if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+
+            const page = parseInt(req.query.page) || 0;
+            const limit = 10; // Количетсво товаров на одной странице
+            const offset = limit * page
+            const totalRows = Object.values(result[0])[0]
+            const totalPage = Math.ceil(totalRows/ limit)
+
+            const qCategory = req.query.category
+
+            if (qCategory) {
+                const sql = `SELECT * FROM product WHERE category_type = ?`;
+                const data = [qCategory]
+
+                pool.query(sql, data, (error, result) => {
+                    if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+
+                    return res.status(200).json({result})
+
+                })
+            } else {
+                const sql = `SELECT * FROM product ORDER BY id ASC LIMIT ${limit} OFFSET ${offset}`;
+                const data = [limit, offset]
+
+                pool.query(sql, (error, result) => {
+                    if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+
+                    return res.status(200).json({result, page, limit, totalRows, totalPage})
+
+                })
+            }
+
+        })
+
+    } catch (err) {
+        next(createError(404, "Products not found"))
+    }
+}
+
 
 module.exports = {
     getTopProduct,
@@ -98,4 +159,6 @@ module.exports = {
     getPopularProductSecond,
     getPopularProductThird,
     getAdvertising,
+    getCategory,
+    getAllProducts,
 }
