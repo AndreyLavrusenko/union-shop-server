@@ -6,7 +6,8 @@ const {
     getPopularProductThird,
     getAdvertising,
     getCategory,
-    getAllProducts
+    getAllProducts,
+    getProductById,
 } = require("../controllers/product");
 
 // Получение главных (популярных) товаров
@@ -18,6 +19,7 @@ router.get('/popular/3', getPopularProductThird)
 router.get('/advertising', getAdvertising)
 router.get('/category', getCategory)
 router.get('/shop', getAllProducts)
+router.get('/:id', getProductById)
 
 
 module.exports = router;

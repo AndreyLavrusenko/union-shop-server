@@ -5,7 +5,7 @@ const {pool} = require("../db");
 const getTopProduct = async (req, res, next) => {
     try {
         // Запрос на сервер
-        const sql = `SELECT * FROM product WHERE isTop = ? AND isVisible = ?`;
+        const sql = `SELECT * FROM product WHERE isTop = ? AND isVisible = ? AND count > 0`;
         const data = [1, 1];
 
         pool.query(sql, data, (error, result) => {
@@ -110,7 +110,7 @@ const getCategory = async (req, res, next) => {
 const getAllProducts = async (req, res, next) => {
     try {
 
-        const sql = `SELECT COUNT(*) FROM product`;
+        const sql = `SELECT COUNT(*) FROM product WHERE count > 0`;
 
         pool.query(sql, (error, result) => {
             if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
@@ -124,7 +124,7 @@ const getAllProducts = async (req, res, next) => {
             const qCategory = req.query.category
 
             if (qCategory) {
-                const sql = `SELECT * FROM product WHERE category_type = ?`;
+                const sql = `SELECT * FROM product WHERE category_type = ? AND count > 0`;
                 const data = [qCategory]
 
                 pool.query(sql, data, (error, result) => {
@@ -134,8 +134,7 @@ const getAllProducts = async (req, res, next) => {
 
                 })
             } else {
-                const sql = `SELECT * FROM product ORDER BY id ASC LIMIT ${limit} OFFSET ${offset}`;
-                const data = [limit, offset]
+                const sql = `SELECT * FROM product WHERE count > 0 ORDER BY id ASC LIMIT ${limit} OFFSET ${offset}`;
 
                 pool.query(sql, (error, result) => {
                     if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
@@ -153,6 +152,32 @@ const getAllProducts = async (req, res, next) => {
 }
 
 
+const getProductById = async (req, res, next) => {
+    try {
+
+        const sql = `SELECT * FROM product WHERE id = ${req.params.id}`;
+
+        pool.query(sql, (error, result) => {
+            if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+
+
+            const sql = `SELECT * FROM all_products WHERE uniqCode = ?`;
+            const data = [result[0].uniqCode]
+
+            pool.query(sql, data, (error, info_result) => {
+                if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+
+                return res.status(200).json({result, info_result})
+            })
+
+        })
+
+    } catch (err) {
+        next(createError(404, "Product not found"))
+    }
+}
+
+
 module.exports = {
     getTopProduct,
     getPopularProductFirst,
@@ -161,4 +186,5 @@ module.exports = {
     getAdvertising,
     getCategory,
     getAllProducts,
+    getProductById,
 }
