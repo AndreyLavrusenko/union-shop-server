@@ -2,6 +2,8 @@ const createError = require("../error");
 const {pool, union_pool} = require("../db");
 const md5 = require('md5-node');
 const jwt = require("jsonwebtoken");
+const { v4: uuidv4 } = require('uuid');
+
 
 // Взод через union id
 const singInByUnionId = async (req, res, next) => {
@@ -53,19 +55,21 @@ const signup = async (req, res, next) => {
 
         // Отправка запроса и его проверка
         pool.query(sql, data,async (error, result) => {
-            if (error) return res.status(400).json({message: "Something went wrong!", resultCode: 1})
+            if (error) return res.status(400).json({message: error, resultCode: 1})
 
             // Если пользователя не сущетсвует то создаем его
             if (result.length === 0) {
+                const id = uuidv4()
 
-                const sql_reg = `INSERT INTO users (email, password) VALUES (?, ?)`
+                const sql_reg = `INSERT INTO users (id, email, password) VALUES (?, ?, ?)`
+                const regData = [id, req.body.email, hash]
 
-                pool.query(sql_reg, data, async (error, result) => {
+                pool.query(sql_reg, regData, async (error, result) => {
                     if (error) return res.status(400).json({message: "Something went wrong!", resultCode: 1})
 
                     // Записываем email пользователя
                     const token = jwt.sign(
-                        {email: req.body.email},
+                        {email: req.body.email, id: id},
                                 process.env.SECRET_JWT,
                         {expiresIn: '30d'}
                     )
@@ -83,7 +87,7 @@ const signup = async (req, res, next) => {
 
                 // Записываем email пользователя
                 const token = jwt.sign(
-                    {email: req.body.email},
+                    {email: req.body.email, id: result[0].id},
                     process.env.SECRET_JWT,
                     {expiresIn: '30d'}
                 )

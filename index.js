@@ -10,6 +10,7 @@ const passportSetup = require('./passport')
 const authRoute = require("./routes/auth");
 const productRoute = require("./routes/product");
 const systemRoute = require("./routes/system");
+const cartRoute = require("./routes/cart");
 
 require('dotenv').config()
 
@@ -29,6 +30,8 @@ app.use(passport.session());
 app.use("/auth", authRoute);
 // Товары
 app.use("/product", productRoute)
+// Корзина
+app.use("/cart", cartRoute)
 // Система
 app.use("/system", systemRoute)
 
