@@ -20,13 +20,17 @@ const app = express();
 app.use(cors({
     credentials: true,
     // origin: "http://localhost:3000"
-    origin: "https://unionshop.onrender.com/"
+    origin: "*"
 }))
 app.use(cookieParser())
 app.use(express.json())
 app.use(session({secret: "this_is_a_secret"}));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    next();
+});
 
 // Вход в аккаунт
 app.use("/auth", authRoute);
