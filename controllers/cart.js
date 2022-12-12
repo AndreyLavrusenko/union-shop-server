@@ -35,7 +35,6 @@ const setProduct = async (req, res, next) => {
                         pool.query(sql_search, data_search, (error, result) => {
                             if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
 
-
                             const product_all_id = result[0].id
                             const product_all_uniq = result[0].uniqCode
 
@@ -167,13 +166,19 @@ const getAllCartQuantity = async (req, res, next) => {
             // Расшифровака токена
             const decoded = jwt.verify(token, process.env.SECRET_JWT)
 
-            const sql = "SELECT COUNT(1) FROM cart WHERE userId = ?"
+            const sql = "SELECT quantity FROM cart WHERE userId = ?"
             const data = [decoded.id]
 
             pool.query(sql, data, (error, result) => {
                 if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
 
-                return res.status(201).json(...result)
+
+                const price = result.reduce((accumulator, object) => {
+                    return accumulator + object.quantity
+                }, 0)
+
+                return res.status(201).json(price)
+
             })
 
         } else {

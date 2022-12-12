@@ -11,6 +11,7 @@ const authRoute = require("./routes/auth");
 const productRoute = require("./routes/product");
 const systemRoute = require("./routes/system");
 const cartRoute = require("./routes/cart");
+const orderRoute = require("./routes/order");
 
 require('dotenv').config()
 
@@ -32,6 +33,8 @@ app.use("/auth", authRoute);
 app.use("/product", productRoute)
 // Корзина
 app.use("/cart", cartRoute)
+// Заказ
+app.use("/order", orderRoute)
 // Система
 app.use("/system", systemRoute)
 
