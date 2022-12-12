@@ -3,7 +3,8 @@ const router = require('express').Router()
 const jwt = require("jsonwebtoken")
 const {singInByUnionId, signup} = require("../controllers/auth");
 
-const CLIENT_URI = "http://localhost:3000"
+// const CLIENT_URI = "http://localhost:3000"
+const CLIENT_URI = "https://unionshop.onrender.com/"
 
 // Когда пользователь зашел в аккаунт отсылаем запрос сюда, что бы проверить
 router.get("/login", (req, res, next) => {
