@@ -4,8 +4,8 @@ const jwt = require("jsonwebtoken");
 
 
 const setProduct = async (req, res, next) => {
-    try {
 
+    try {
         const authHeader = req.headers.token
 
         if (authHeader) {

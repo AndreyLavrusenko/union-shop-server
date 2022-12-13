@@ -9,7 +9,7 @@ passport.use(
     new VKontakteStrategy({
             clientID: process.env.VK_CLIENT_ID,
             clientSecret: process.env.VK_CLIENT_SECRET,
-            callbackURL: `http://localhost:${process.env.PORT}/auth/vkontakte/callback`,
+            callbackURL: `${process.env.BACK_URI}/auth/vkontakte/callback`,
         },
         function (accessToken, refreshToken, params, profile, done) {
             return done(null, profile);
