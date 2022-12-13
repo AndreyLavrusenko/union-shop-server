@@ -30,6 +30,7 @@ app.use(passport.session());
 app.use(function (req, res, next) {
     res.setHeader('Access-Control-Allow-Origin', req.header('origin')
         || req.header('x-forwarded-host') || req.header('referer') || req.header('host'));
+    next();
 });
 
 // Вход в аккаунт
