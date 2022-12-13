@@ -19,8 +19,7 @@ const app = express();
 
 app.use(cors({
     credentials: true,
-    // origin: "http://localhost:3000"
-    origin: "https://unionshop.onrender.com"
+    origin: process.env.CLIENT_URI
 }))
 app.use(cookieParser())
 app.use(express.json())

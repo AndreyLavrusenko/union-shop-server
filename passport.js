@@ -21,7 +21,7 @@ passport.use(
     new GoogleStrategy({
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: `http://localhost:${process.env.PORT}/auth/google/callback`,
+            callbackURL: `${process.env.BACK_URI}/auth/google/callback`,
         },
         function (accessToken, refreshToken, profile, done) {
             return done(null, profile);
@@ -33,7 +33,7 @@ passport.use(
     new YandexStrategy({
             clientID: process.env.YANDEX_CLIENT_ID,
             clientSecret: process.env.YANDEX_CLIENT_SECRET,
-            callbackURL: `http://localhost:${process.env.PORT}/auth/yandex/callback`
+            callbackURL: `${process.env.BACK_URI}/auth/yandex/callback`
         },
         function (accessToken, refreshToken, profile, done) {
             return done(null, profile);
