@@ -98,7 +98,8 @@ const getOrderSum = async (req, res, next) => {
             pool.query(sql, data, (error, result) => {
                 if (error) return res.status(400).json({message: error, resultCode: 1})
 
-                return res.status(200).json(result[0].total + result[0].deliveryPrice)
+                return res.status(200).json(result)
+                    // .json(result[0].total + result[0].deliveryPrice)
             })
 
         }
@@ -164,10 +165,75 @@ const deleteCostOfDelivery = async (req, res, next) => {
     }
 }
 
+// Пользователь заполнил форму с личными данными и нажал продолжить
+const setDeliveryUserInfo = async (req, res, next) => {
+    try {
+
+        const authHeader = req.headers.token
+
+        if (authHeader) {
+
+            const token = authHeader.split(" ")[1]
+
+            // Расшифровака токена
+            const decoded = jwt.verify(token, process.env.SECRET_JWT)
+
+            const sql = "UPDATE orders SET userInfo = ?, email = ? WHERE userId = ? AND status = ?"
+            const data = [req.body.userInfo, req.body.email, decoded.id, 'process']
+
+            pool.query(sql, data, (error, result) => {
+                if (error) return res.status(400).json({message: error, resultCode: 1})
+
+                return res.status(200).json({resultCode: 0})
+            })
+        }
+
+    } catch (err) {
+        next(createError(400, "Что-то пошло не так"))
+    }
+}
+
+// Нажатие на кнопку оплатить
+const makeOrder = (req, res, next) => {
+    try {
+
+        const authHeader = req.headers.token
+
+        if (authHeader) {
+
+            const token = authHeader.split(" ")[1]
+
+            // Расшифровака токена
+            const decoded = jwt.verify(token, process.env.SECRET_JWT)
+
+            const sql = "UPDATE orders SET status = ? WHERE userId = ? AND status = ?"
+            const data = ['performed', decoded.id, 'process']
+
+            pool.query(sql, data, (error, result) => {
+                if (error) return res.status(400).json({message: error, resultCode: 1})
+
+                const cart_sql = "DELETE FROM cart WHERE userId = ?"
+                const cart_data = [decoded.id]
+
+                pool.query(cart_sql, cart_data, (error) => {
+                    if (error) return res.status(400).json({message: error, resultCode: 1})
+
+                    return res.status(200).json({resultCode: 0})
+                })
+            })
+        }
+
+    } catch (err) {
+        next(createError(400, "Что-то пошло не так"))
+    }
+}
+
 
 module.exports = {
     createOrder,
     getOrderSum,
     setNewDeliveryPrice,
     deleteCostOfDelivery,
+    setDeliveryUserInfo,
+    makeOrder,
 }
