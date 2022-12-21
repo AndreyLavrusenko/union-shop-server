@@ -15,7 +15,7 @@ const createOrder = (req, res, next) => {
             // Расшифровака токена
             const decoded = jwt.verify(token, process.env.SECRET_JWT)
 
-            const sql_select = "SELECT allProductId, productName, color, price, size, quantity FROM cart WHERE userId = ?";
+            const sql_select = "SELECT uniqCode, allProductId, productName, color, price, size, quantity FROM cart WHERE userId = ?";
             const data_select = [decoded.id]
 
             // Получение товаров из корзины
@@ -228,6 +228,94 @@ const makeOrder = (req, res, next) => {
     }
 }
 
+// Получение сделнных заказов
+const getOrders = async (req, res, next) => {
+    try {
+
+        const authHeader = req.headers.token
+
+        if (authHeader) {
+
+            const token = authHeader.split(" ")[1]
+
+            // Расшифровака токена
+            const decoded = jwt.verify(token, process.env.SECRET_JWT)
+
+            const sql = "SELECT status, myOrder, id FROM orders WHERE userId = ? AND status != ?"
+            const data = [decoded.id, 'process']
+
+            // Функиця для получения данных из product
+            function getItemFromProductTable(arr, callback) {
+                const resultArray = [];
+                let pending = arr.length;
+                const sql2 = "SELECT title, uniqCode, description, color, subColor, backgroundcolor, image FROM product WHERE uniqCode = ?"
+
+                for (let i = 0; i < pending; i++) {
+                    const data2 = [arr[i]];
+
+                    pool.query(sql2, data2, (error, result) => {
+                        if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+
+                        resultArray.push(...result)
+                        if (0 === --pending) {
+                            callback(resultArray)
+                        }
+                    })
+                }
+            }
+
+            // Получение заказов из orders
+            pool.query(sql, data, (error, result) => {
+                if (error) return res.status(400).json({message: error, resultCode: 1})
+
+                const myOrder = result.map(item => JSON.parse(item.myOrder))
+
+                if (myOrder.length !== 0) {
+
+                    // Перебираем заказы и достаем только uniqCode
+                    const orderUniqCode = []
+                    myOrder.forEach(item => {
+                        item.forEach(code => {
+                            orderUniqCode.push(code.uniqCode)
+                        })
+                    })
+
+                    // Заносим все заказы в один массив
+                    const ordersInfo = []
+                    myOrder.forEach(item => {
+                        item.forEach(order => {
+                            ordersInfo.push(order)
+                        })
+                    })
+
+                    // Удаляем дубликаты из массива uniqCode
+                    const setOrder = Array.from(new Set(orderUniqCode))
+                    const arr = []
+
+
+                    getItemFromProductTable(setOrder, function (resultArray) {
+                        setOrder.forEach((code, i) => {
+                            resultArray.forEach((item, j) => {
+                                if (code === item.uniqCode) {
+                                    // Добавление в массив информации из product и orders
+                                    arr.push({...item, ...ordersInfo[i]})
+                                }
+                            })
+                        })
+
+                        return res.status(200).json(arr)
+                    })
+                } else {
+                    return res.status(400).json({resultCode: 1})
+                }
+            })
+        }
+
+    } catch (err) {
+        next(createError(400, "Что-то пошло не так"))
+    }
+}
+
 
 module.exports = {
     createOrder,
@@ -236,4 +324,5 @@ module.exports = {
     deleteCostOfDelivery,
     setDeliveryUserInfo,
     makeOrder,
+    getOrders,
 }
