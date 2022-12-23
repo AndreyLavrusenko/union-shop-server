@@ -206,19 +206,51 @@ const makeOrder = (req, res, next) => {
             // Расшифровака токена
             const decoded = jwt.verify(token, process.env.SECRET_JWT)
 
-            const sql = "UPDATE orders SET status = ? WHERE userId = ? AND status = ?"
-            const data = ['performed', decoded.id, 'process']
+            const getQuantitySql = "SELECT myOrder FROM orders WHERE userId = ? AND status = ?"
+            const getQuantityData = [decoded.id, 'process']
 
-            pool.query(sql, data, (error, result) => {
-                if (error) return res.status(400).json({message: error, resultCode: 1})
+            pool.query(getQuantitySql, getQuantityData, (error, result) => {
 
-                const cart_sql = "DELETE FROM cart WHERE userId = ?"
-                const cart_data = [decoded.id]
 
-                pool.query(cart_sql, cart_data, (error) => {
+                const myOrder = result.map(item => JSON.parse(item.myOrder))
+
+                const orderUniqCode = []
+                if (myOrder.length !== 0) {
+                    // Перебираем заказы и достаем только номер в all_products и количество в заказе
+                    myOrder.forEach(item => {
+                        item.forEach(code => {
+                            const obj = {}
+                            obj.allProductId = code.allProductId;
+                            obj.quantity = code.quantity
+                            orderUniqCode.push(obj)
+                        })
+                    })
+                }
+
+                //Уменьшить количество товара в таблице all_products
+                orderUniqCode.map(orderItem => {
+                    const decrease_sql = "UPDATE all_products SET count = count - ? WHERE id = ?"
+                    const decrease_data = [orderItem.quantity, orderItem.allProductId]
+
+                    pool.query(decrease_sql, decrease_data, (error_decrease, result_decrease) => {
+                        if (error_decrease) return res.status(400).json({message: error_decrease, resultCode: 1})
+                    })
+                })
+
+                const sql = "UPDATE orders SET status = ? WHERE userId = ? AND status = ?"
+                const data = ['performed', decoded.id, 'process']
+
+                pool.query(sql, data, (error, result) => {
                     if (error) return res.status(400).json({message: error, resultCode: 1})
 
-                    return res.status(200).json({resultCode: 0})
+                    const cart_sql = "DELETE FROM cart WHERE userId = ?"
+                    const cart_data = [decoded.id]
+
+                    pool.query(cart_sql, cart_data, (error) => {
+                        if (error) return res.status(400).json({message: error, resultCode: 1})
+
+                        return res.status(200).json({resultCode: 0})
+                    })
                 })
             })
         }
@@ -241,7 +273,7 @@ const getOrders = async (req, res, next) => {
             // Расшифровака токена
             const decoded = jwt.verify(token, process.env.SECRET_JWT)
 
-            const sql = "SELECT status, myOrder, id FROM orders WHERE userId = ? AND status != ?"
+            const sql = "SELECT status, myOrder, id, trackNumber FROM orders WHERE userId = ? AND status != ?"
             const data = [decoded.id, 'process']
 
             // Функиця для получения данных из product
@@ -271,7 +303,6 @@ const getOrders = async (req, res, next) => {
                 const myOrder = result.map(item => JSON.parse(item.myOrder))
 
                 if (myOrder.length !== 0) {
-
                     // Перебираем заказы и достаем только uniqCode
                     const orderUniqCode = []
                     myOrder.forEach(item => {
@@ -282,20 +313,21 @@ const getOrders = async (req, res, next) => {
 
                     // Заносим все заказы в один массив
                     const ordersInfo = []
-                    myOrder.forEach(item => {
+                    myOrder.forEach((item, i) => {
                         item.forEach(order => {
+                            order.id = result[i].id
+                            order.performed = result[i].status
+                            order.trackNumber = result[i].trackNumber
                             ordersInfo.push(order)
                         })
                     })
 
-                    // Удаляем дубликаты из массива uniqCode
-                    const setOrder = Array.from(new Set(orderUniqCode))
+
                     const arr = []
 
-
-                    getItemFromProductTable(setOrder, function (resultArray) {
-                        setOrder.forEach((code, i) => {
-                            resultArray.forEach((item, j) => {
+                    getItemFromProductTable(orderUniqCode, function (resultArray) {
+                        orderUniqCode.forEach((code, i) => {
+                            resultArray.forEach(item => {
                                 if (code === item.uniqCode) {
                                     // Добавление в массив информации из product и orders
                                     arr.push({...item, ...ordersInfo[i]})
@@ -304,6 +336,7 @@ const getOrders = async (req, res, next) => {
                         })
 
                         return res.status(200).json(arr)
+
                     })
                 } else {
                     return res.status(400).json({resultCode: 1})
