@@ -99,7 +99,7 @@ const getOrderSum = async (req, res, next) => {
                 if (error) return res.status(400).json({message: error, resultCode: 1})
 
                 return res.status(200).json(result)
-                    // .json(result[0].total + result[0].deliveryPrice)
+                // .json(result[0].total + result[0].deliveryPrice)
             })
 
         }
@@ -181,10 +181,122 @@ const setDeliveryUserInfo = async (req, res, next) => {
             const sql = "UPDATE orders SET userInfo = ?, email = ? WHERE userId = ? AND status = ?"
             const data = [req.body.userInfo, req.body.email, decoded.id, 'process']
 
-            pool.query(sql, data, (error, result) => {
+
+            pool.query(sql, data, (error, result_update) => {
                 if (error) return res.status(400).json({message: error, resultCode: 1})
 
-                return res.status(200).json({resultCode: 0})
+
+                const find_user_sql = "SELECT * FROM users WHERE id = ?"
+                const find_user_data = [decoded.id]
+
+
+                pool.query(find_user_sql, find_user_data, (error, result) => {
+                    if (error) return res.status(400).json({message: error, resultCode: 1})
+
+                    if (result.length === 0) {
+                        const user_sql = "INSERT INTO users (id, userId, userInfo) VALUES (?, ?, ?)"
+                        const user_data = [decoded.id, decoded.id, req.body.userInfo]
+
+                        pool.query(user_sql, user_data, (error, result) => {
+                            if (error) return res.status(400).json({message: error, resultCode: 1})
+
+                            return res.status(200).json({resultCode: 0})
+                        })
+                    } else {
+                        const sql_user = "UPDATE users SET userInfo = ? WHERE id = ?"
+                        const data_user = [req.body.userInfo, decoded.id]
+
+                        pool.query(sql_user, data_user, (error, result) => {
+                            if (error) return res.status(400).json({message: error, resultCode: 1})
+
+                            return res.status(200).json({resultCode: 0})
+                        })
+                    }
+                })
+            })
+        }
+
+    } catch (err) {
+        next(createError(400, "Что-то пошло не так"))
+    }
+}
+
+
+// Сравнивает доступное количество к покупке и продажи
+const getQuantityOrders = (req, res, next) => {
+    try {
+
+        const authHeader = req.headers.token
+
+        if (authHeader) {
+
+            const token = authHeader.split(" ")[1]
+
+            // Расшифровака токена
+            const decoded = jwt.verify(token, process.env.SECRET_JWT)
+
+
+            const getQuantitySql = "SELECT myOrder FROM orders WHERE userId = ? AND status = ?"
+            const getQuantityData = [decoded.id, 'process']
+
+            pool.query(getQuantitySql, getQuantityData, (error, result) => {
+
+                const myOrder = result.map(item => JSON.parse(item.myOrder))
+
+                const orderUniqCode = []
+                if (myOrder.length !== 0) {
+                    // Перебираем заказы и достаем только номер в all_products и количество в заказе
+                    myOrder.forEach(item => {
+                        item.forEach(code => {
+                            const obj = {}
+                            obj.allProductId = code.allProductId;
+                            obj.quantity = code.quantity
+                            orderUniqCode.push(obj)
+                        })
+                    })
+                }
+
+                function getItemCountFromAllProducts(arr, callback) {
+                    const resultArray = [];
+                    let pending = arr.length;
+                    const sql2 = "SELECT count, id FROM all_products WHERE id = ?"
+
+                    for (let i = 0; i < pending; i++) {
+                        const data2 = [arr[i].allProductId];
+
+                        pool.query(sql2, data2, (error, result) => {
+                            if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+
+                            resultArray.push(...result)
+                            if (0 === --pending) {
+                                callback(resultArray)
+                            }
+                        })
+                    }
+                }
+
+
+                // Проверка все ли товары есть в наличии
+
+                const arr = []
+                getItemCountFromAllProducts(orderUniqCode, function (resultArray) {
+
+                    orderUniqCode.forEach((result, i) => {
+                        resultArray.forEach((item, j) => {
+                            if (result.allProductId === item.id) {
+                                if (item.count - result.quantity < 0) {
+                                    arr.push(false)
+                                } else {
+                                    arr.push(true)
+                                }
+                            }
+                        })
+                    })
+
+                    const returnValue = arr.every(item => item)
+
+                    return res.status(200).json(returnValue)
+                })
             })
         }
 
@@ -206,11 +318,11 @@ const makeOrder = (req, res, next) => {
             // Расшифровака токена
             const decoded = jwt.verify(token, process.env.SECRET_JWT)
 
+
             const getQuantitySql = "SELECT myOrder FROM orders WHERE userId = ? AND status = ?"
             const getQuantityData = [decoded.id, 'process']
 
             pool.query(getQuantitySql, getQuantityData, (error, result) => {
-
 
                 const myOrder = result.map(item => JSON.parse(item.myOrder))
 
@@ -252,6 +364,7 @@ const makeOrder = (req, res, next) => {
                         return res.status(200).json({resultCode: 0})
                     })
                 })
+
             })
         }
 
@@ -350,6 +463,71 @@ const getOrders = async (req, res, next) => {
 }
 
 
+const getOrderById = (req, res, next) => {
+    try {
+
+        const authHeader = req.headers.token
+
+        if (authHeader) {
+
+            const token = authHeader.split(" ")[1]
+
+            // Расшифровака токена
+            const decoded = jwt.verify(token, process.env.SECRET_JWT)
+
+
+            function getItemInfoByUniqCode(arr, callback) {
+                const resultArray = [];
+                let pending = arr.length;
+                const sql2 = "SELECT uniqCode, title, image FROM product WHERE uniqCode = ?"
+
+                for (let i = 0; i < pending; i++) {
+                    const data2 = [arr[i].uniqCode];
+
+                    pool.query(sql2, data2, (error, result) => {
+                        if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+
+                        resultArray.push(...result)
+                        if (0 === --pending) {
+                            callback(resultArray)
+                        }
+                    })
+                }
+            }
+
+
+            const sql = "SELECT id, total, deliveryPrice, sale, myOrder, userInfo, status, trackNumber FROM orders WHERE userId = ? AND id = ?"
+            const data = [decoded.id, req.params.id]
+
+            pool.query(sql, data, (error, result) => {
+                if (error) return res.status(400).json({message: error, resultCode: 1})
+
+                const restArrOrders = JSON.parse(result[0].myOrder)
+
+                const arr = []
+
+                getItemInfoByUniqCode(restArrOrders, function (resultArray) {
+                    restArrOrders.forEach((code, i) => {
+                        resultArray.forEach(item => {
+                            if (code.uniqCode === item.uniqCode) {
+                                // Добавление в массив информации из product и orders
+                                arr.push({...item, ...code})
+                            }
+                        })
+                    })
+
+                    return res.status(200).json({arr, result})
+
+                })
+
+            })
+        }
+
+    } catch (err) {
+        next(createError(400, "Что-то пошло не так"))
+    }
+}
+
 module.exports = {
     createOrder,
     getOrderSum,
@@ -358,4 +536,6 @@ module.exports = {
     setDeliveryUserInfo,
     makeOrder,
     getOrders,
+    getQuantityOrders,
+    getOrderById,
 }

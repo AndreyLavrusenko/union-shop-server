@@ -111,7 +111,35 @@ const signup = async (req, res, next) => {
 }
 
 
+const getUserInfo = async (req, res, next) => {
+    try {
+
+        const authHeader = req.headers.token
+
+        if (authHeader) {
+
+            const token = authHeader.split(" ")[1]
+
+            // Расшифровака токена
+            const decoded = jwt.verify(token, process.env.SECRET_JWT)
+
+            const sql = "SELECT userInfo FROM users WHERE id = ?"
+            const data = [decoded.id]
+
+            pool.query(sql, data, (error, result) => {
+                if (error) return res.status(400).json({message: error, resultCode: 1})
+
+                return res.status(200).json(result)
+            })
+        }
+
+    } catch (err) {
+        next(createError(400, "Something went wrong!"))
+    }
+}
+
 module.exports = {
     singInByUnionId,
     signup,
+    getUserInfo,
 }

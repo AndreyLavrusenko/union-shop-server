@@ -1,7 +1,7 @@
 const passport = require("passport");
 const router = require('express').Router()
 const jwt = require("jsonwebtoken")
-const {singInByUnionId, signup} = require("../controllers/auth");
+const {singInByUnionId, signup, getUserInfo} = require("../controllers/auth");
 
 const CLIENT_URI = process.env.CLIENT_URI
 
@@ -43,7 +43,7 @@ router.post("/union/signin", singInByUnionId)
 // Вход в акканут или регистрация, если почта свободна
 router.post('/signup', signup)
 
-
+router.get('/userInfo', getUserInfo)
 
 router.get('/vkontakte', passport.authenticate('vkontakte'));
 router.get(
