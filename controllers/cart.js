@@ -210,10 +210,80 @@ const deleteCart = async (req, res, next) => {
 }
 
 
+const updateCartQuantityPlus = (req, res, next) => {
+    try {
+
+        const authHeader = req.headers.token
+
+        if (authHeader) {
+
+            const token = authHeader.split(" ")[1]
+            // Расшифровака токена
+            const decoded = jwt.verify(token, process.env.SECRET_JWT)
+
+            const sql = "UPDATE cart SET quantity = quantity + 1 WHERE id = ? AND userId = ?"
+            const data = [req.params.id, decoded.id]
+
+            pool.query(sql, data, (error, result) => {
+                if (error) return res.status(400).json({message: "Товар не найден", resultCode: 1})
+
+                return res.status(201).json({resultCode: 0})
+            })
+
+        }
+
+
+    } catch (err) {
+        next(createError(400, 'Что-то пошло не так'))
+    }
+}
+
+const updateCartQuantityMinus = (req, res, next) => {
+    try {
+
+        const authHeader = req.headers.token
+
+        if (authHeader) {
+
+            const token = authHeader.split(" ")[1]
+            // Расшифровака токена
+            const decoded = jwt.verify(token, process.env.SECRET_JWT)
+
+            const sql_info = "SELECT quantity FROM cart WHERE id = ? AND userId = ?"
+            const data_info = [req.params.id, decoded.id]
+
+            pool.query(sql_info, data_info, (error, result) => {
+                if (error) return res.status(400).json({message: "Товар не найден", resultCode: 1})
+
+                if (result[0].quantity > 1) {
+                    const sql = "UPDATE cart SET quantity = quantity - 1 WHERE id = ? AND userId = ?"
+                    const data = [req.params.id, decoded.id]
+
+
+                    pool.query(sql, data, (error, result) => {
+                        if (error) return res.status(400).json({message: "Товар не найден", resultCode: 1})
+
+                        return res.status(201).json({resultCode: 0})
+                    })
+                }
+            })
+
+
+        }
+
+
+    } catch (err) {
+        next(createError(400, 'Что-то пошло не так'))
+    }
+}
+
+
 module.exports = {
     setProduct,
     getAllCart,
     deleteCart,
     getAllCartQuantity,
     getItemCart,
+    updateCartQuantityMinus,
+    updateCartQuantityPlus,
 }
