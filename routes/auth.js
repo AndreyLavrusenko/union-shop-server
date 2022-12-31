@@ -1,7 +1,7 @@
 const passport = require("passport");
 const router = require('express').Router()
 const jwt = require("jsonwebtoken")
-const {singInByUnionId, signup, getUserInfo} = require("../controllers/auth");
+const {singInByUnionId, signup, getUserInfo, adminSingIn, adminCheckAuth} = require("../controllers/auth");
 
 const CLIENT_URI = process.env.CLIENT_URI
 
@@ -42,6 +42,12 @@ router.post("/union/signin", singInByUnionId)
 
 // Вход в акканут или регистрация, если почта свободна
 router.post('/signup', signup)
+
+// Вход администратора
+router.post('/admin-auth', adminSingIn)
+
+// Проверка вошел ли админ в аккаунт
+router.get('/admin-check-auth', adminCheckAuth)
 
 router.get('/userInfo', getUserInfo)
 
