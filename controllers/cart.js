@@ -17,12 +17,12 @@ const setProduct = async (req, res, next) => {
 
             const sql_select = "SELECT * FROM cart WHERE userId = ?";
             const data_select = [decoded.id]
+
             // Получаю всю карзину и если такой товар уже есть обновляю его количество
             pool.query(sql_select, data_select, (error, result) => {
 
-
-                const sql_search_in_cart = "SELECT * FROM cart WHERE productName = ? AND size = ? AND color = ?"
-                const data_search_in_cart = [req.body.name, req.body.size, req.body.color]
+                const sql_search_in_cart = "SELECT * FROM cart WHERE productName = ? AND size = ? AND color = ? AND userId = ?"
+                const data_search_in_cart = [req.body.name, req.body.size, req.body.color, decoded.id]
 
                 pool.query(sql_search_in_cart, data_search_in_cart, (error, result) => {
                     // Если такого товара еще нет в козине
@@ -33,7 +33,7 @@ const setProduct = async (req, res, next) => {
 
                         // Добавляю товар в корзину с его уникальным id из другой таблицы
                         pool.query(sql_search, data_search, (error, result) => {
-                            if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+                            if (error) return res.status(400).json({message: "Products not found 1", resultCode: 1})
 
                             const product_all_id = result[0].id
                             const product_all_uniq = result[0].uniqCode
@@ -43,18 +43,18 @@ const setProduct = async (req, res, next) => {
                             const data = [decoded.id, product_all_uniq, req.body.id, product_all_id, req.body.name, req.body.price, req.body.color, req.body.size]
 
                             pool.query(sql, data, (error, result) => {
-                                if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+                                if (error) return res.status(400).json({message: "Products not found 2", resultCode: 1})
 
                                 return res.status(201).json({resultCode: 0})
                             })
                         })
                     } else {
                         // Если в таблице есть такой товар, то увеличиваем счетчик на 1
-                        const sql_update = "UPDATE cart SET quantity = quantity + 1 WHERE productName = ? AND size = ? AND color = ?"
-                        const data_update = [req.body.name, req.body.size, req.body.color]
+                        const sql_update = "UPDATE cart SET quantity = quantity + 1 WHERE productName = ? AND size = ? AND color = ? AND userId = ?"
+                        const data_update = [req.body.name, req.body.size, req.body.color, decoded.id]
 
                         pool.query(sql_update, data_update, (error, result) => {
-                            if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+                            if (error) return res.status(400).json({message: "Products not found 3", resultCode: 1})
 
                             return res.status(201).json({resultCode: 0})
                         })

@@ -8,6 +8,7 @@ const {
     getCategory,
     getAllProducts,
     getProductById,
+    getAllProductsNoPagination,
 } = require("../controllers/product");
 
 // Получение главных (популярных) товаров
@@ -19,6 +20,7 @@ router.get('/popular/third', getPopularProductThird)
 router.get('/advertising', getAdvertising)
 router.get('/category', getCategory)
 router.get('/shop', getAllProducts)
+router.get('/all', getAllProductsNoPagination)
 router.get('/:id', getProductById)
 
 

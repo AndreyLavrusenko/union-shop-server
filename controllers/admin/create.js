@@ -81,7 +81,7 @@ const createNewProduct = async (req, res, next) => {
                 pool.query(sql, data, (error, result) => {
                     if (error) return res.status(400).json({message: "Product's not created", resultCode: 1})
 
-                    return res.status(201).json({resultCode: 0})
+                    return res.status(201).json({resultCode: 0, uniqCode})
                 })
 
             } catch (err) {
@@ -96,6 +96,46 @@ const createNewProduct = async (req, res, next) => {
 }
 
 
+const createNewAllProduct = async (req, res, next) => {
+    try {
+        const {productName, productColor, productSize, productPrice, productCount} = JSON.parse(req.body.productInfo)
+
+        const sql = "INSERT INTO all_products (uniqCode, title_product, color, size, count, price) VALUES (?, ?, ?, ?, ?, ?)"
+        const data = [req.params.id, productName, productColor, productSize, productCount, productPrice]
+
+        pool.query(sql, data, (error, result) => {
+            if (error) return res.status(500).json(({resultCode: 1}))
+
+            return res.status(201).json({resultCode: 0})
+        })
+
+    } catch (err) {
+        next(createError(400, 'Что-то пошло не так'))
+    }
+}
+
+
+
+const getNewAllProduct = async (req, res, next) => {
+    try {
+        const sql = "SELECT * FROM all_products WHERE uniqCode = ?"
+        const data = [req.params.id]
+
+        pool.query(sql, data, (error, result) => {
+            if (error) return res.status(500).json(({resultCode: 1}))
+
+            return res.status(201).json({resultCode: 0, result})
+        })
+
+    } catch (err) {
+        next(createError(400, "Что-то пошло не так"))
+    }
+}
+
+
+
 module.exports = {
     createNewProduct,
+    createNewAllProduct,
+    getNewAllProduct,
 }

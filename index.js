@@ -14,6 +14,7 @@ const systemRoute = require("./routes/system");
 const cartRoute = require("./routes/cart");
 const orderRoute = require("./routes/order");
 const createAdminRoute = require('./routes/admin/create')
+const removeAdminRoute = require('./routes/admin/remove')
 
 require('dotenv').config()
 
@@ -45,6 +46,8 @@ app.use("/order", orderRoute)
 app.use("/system", systemRoute)
 // Создание карточек
 app.use('/create', createAdminRoute)
+// Удаление карточек
+app.use('/remove', removeAdminRoute)
 
 
 

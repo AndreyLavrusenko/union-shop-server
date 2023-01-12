@@ -179,6 +179,21 @@ const getProductById = async (req, res, next) => {
 }
 
 
+const getAllProductsNoPagination = async (req, res, next) => {
+    try {
+        const sql = `SELECT * FROM product`;
+
+        pool.query(sql, (error, result) => {
+            if (error) return res.status(400).json({message: "Products not found", resultCode: 1})
+
+            return res.status(200).json(result)
+
+        })
+    } catch (err) {
+        next(createError(404, "Products not found"))
+    }
+}
+
 
 module.exports = {
     getTopProduct,
@@ -189,4 +204,5 @@ module.exports = {
     getCategory,
     getAllProducts,
     getProductById,
+    getAllProductsNoPagination,
 }
